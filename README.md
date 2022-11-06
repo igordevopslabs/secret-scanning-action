@@ -33,8 +33,8 @@ Essa Action apresenta uma maneira de rodar o [Gitleaks](https://github.com/zrice
   uses: igordevopslabs/secret-scanning-action@0.1.0
     with:
       slack_webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
-      github_token: ${{ secrets.GH_TOKEN }}
       slack_channel: 'SLCHEXEMP10'
+      github_token: ${{ secrets.GITHUB_TOKEN }}
 ```
 
 ## Como remover uma secret do git history?
