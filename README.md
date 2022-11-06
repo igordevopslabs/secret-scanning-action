@@ -7,7 +7,7 @@ Essa Action apresenta uma maneira de rodar o [Gitleaks](https://github.com/zrice
 
 | Name          | Required | Type   | Default value                    | Description                                              |
 | ------------- | -------- | ------ | -------------------------------- | -------------------------------------------------------- |
-| image        | false    | string | zricethezav/gitleaks:latest                | The docker image to run gitleaks scan.           |
+| image        | true    | string | zricethezav/gitleaks:v8.15.0                | The docker image to run gitleaks scan.           |
 | exit_code        | false    | string | '0'  | If different from 0, the job will be break if a leak were found.         |
 | slack_webhook_url | true    | string |        ""                      | The URL of Slack Webhook.                     |
 | github_token        | true    | string   |    ""                         | GitHub Token for API calls. |

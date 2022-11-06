@@ -3,8 +3,8 @@ description: "Make a security scan searching for secrets leaked in the repo. If 
 inputs:
 
   image:
-    required: false
-    default: 'zricethezav/gitleaks:latest'
+    required: true
+    default: 'zricethezav/gitleaks:v8.15.0'
     description: 'The docker image to run gitleaks scan.'
   
   exit_code:
