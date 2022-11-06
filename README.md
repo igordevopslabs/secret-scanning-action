@@ -37,6 +37,17 @@ Essa Action apresenta uma maneira de rodar o [Gitleaks](https://github.com/zrice
       github_token: ${{ secrets.GITHUB_TOKEN }}
 ```
 
+Essa action simplifica algumas opções de notificação em caso de secrets que foram enviadas ao repositório remoto por engano.
+Se durante a execução da action nenhuma secret for detectad, os steps de notificação não serão executados.
+
+### Notificações disponíveis:
+
+  * Comentário no Pull Request atual onde o scan está sendo executado.
+  * Alerta num canal específiico do Slack.
+
+### Comentário no PR:
+![imagem](https://user-images.githubusercontent.com/73206099/200149543-e599677c-7b32-444f-8156-5ada55858ea8.png)
+
 ## Como remover uma secret do git history?
 
 [GitHub](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/removing-sensitive-data-from-a-repository) possui um artigo para o uso do [BFG Repo Cleaner](https://rtyley.github.io/bfg-repo-cleaner/).
