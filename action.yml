@@ -1,0 +1,159 @@
+name: "Secret Scanning"
+description: "Make a security scan searching for secrets leaked in the repo. If some secret is finding in the repo, a slack notification will be sent too."
+inputs:
+
+  image:
+    required: false
+    default: 'zricethezav/gitleaks:latest'
+    description: 'The docker image to run gitleaks scan.'
+  
+  exit_code:
+    required: false
+    description: 'If different from 0, the job will be break if a leak were found'
+    default: '0'
+
+  slack_webhook_url:
+    description: 'The URL of Slack Webhook.'
+    required: true
+
+  github_token:
+    description: 'GitHub Token for API calls.'
+    required: true
+
+  tag:
+    description: 'Deploy tag.'
+    required: false
+    default: 'main'
+
+  slack_channel:
+    description: 'slack channel id'
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Set outputs to number of commits
+      id: vars
+      shell: bash
+      env:
+        BASE_REF: ${{ github.base_ref }}
+      run: echo "::set-output name=commits_number::$(git rev-list origin/$BASE_REF..HEAD --count)"
+
+    - name: Run Gitleaks
+      id: gitleaks-scan
+      shell: bash
+      env:
+        IMAGE: ${{ inputs.image }}
+        EXIT_CODE: ${{ inputs.exit_code }}
+        COMMIT_NUMBER: ${{ steps.vars.outputs.commits_number }}
+      run: |
+        set -o pipefail
+        TEMP_FILE=$(mktemp)
+        docker run -v $GITHUB_WORKSPACE:/path $IMAGE --source="/path" detect --log-level info --redact --verbose --exit-code $EXIT_CODE --no-banner --log-opts "-n $COMMIT_NUMBER --no-merges"| tee $TEMP_FILE
+        echo "::set-output name=logs::$(cat $TEMP_FILE | base64 | tr -d '\n')"
+
+    - name: Get PR Number
+      if: steps.gitleaks-scan.outputs.logs != ''
+      uses: jwalton/gh-find-current-pr@v1
+      id: find_pr
+      with:
+        github-token: ${{ inputs.github_token }}
+        state: open
+
+    - name: Export PR Info
+      if: steps.gitleaks-scan.outputs.logs != ''
+      id: pr
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ inputs.github_token }}
+        PR_NUMBER: ${{ steps.find_pr.outputs.number }}
+      run: | 
+        export USER_LOGIN=$(curl -X GET -H "Accept: application/vnd.github.v3+json" -H "Authorization: token $GITHUB_TOKEN" https://api.github.com/repos/${{ github.repository }}/pulls/$PR_NUMBER | jq -r .user.login)
+        echo "::set-output name=author::$USER_LOGIN"  
+        echo "::set-output name=url::https://github.com/${{ github.repository }}/pull/${{ steps.find_pr.outputs.number }}"
+
+    - name: Write PR comments
+      if: steps.gitleaks-scan.outputs.logs != ''
+      id: write-pr
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ inputs.github_token }}
+        REPO: ${{ github.repository }}
+        PR_NUMBER: ${{ steps.find_pr.outputs.number }}
+      run: |
+        curl \
+          -X PATCH \
+          -H "Accept: application/vnd.github+json" \
+          -H "Authorization: Bearer $GITHUB_TOKEN" \
+          https://api.github.com/repos/$REPO/pulls/$PR_NUMBER \
+          -d '{"body":":poop: There is one or more secrets leaked in this PR. Please, see the secret scanning job details.\n\n:pencil2: To cleanup secrets from this repo, you can see this link: https://rtyley.github.io/bfg-repo-cleaner/","state":"open","base":"${{ github.base_ref }}"}'        
+
+    - name: Slack Notification
+      if: steps.gitleaks-scan.outputs.logs != ''
+      shell: bash
+      env:
+        AUTHOR: ${{ steps.pr.outputs.author }}
+        JOB_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        APP_NAME: ${{ inputs.custom_header_title || github.repository }}
+        TAG: ${{ inputs.tag }}
+        SLACK_CHANNEL: ${{ inputs.slack_channel }}
+        PR_URL: ${{ steps.pr.outputs.url }}
+        COLOR_ATTACHMENT: '#D94346'
+        TEXT: 'Issues was found by secret scanning' 
+        ADDITIONAL_HEADER_INFO: 
+      run: |
+        curl -s -X POST ${{ inputs.slack_webhook_url }} \
+          -H 'Content-Type: application/json' \
+          -d @- <<BODY    
+          { 
+            "channel": "$SLACK_CHANNEL", 
+            "attachments": [ 
+              { 
+                "color": "$COLOR_ATTACHMENT", 
+                "blocks": [ 
+                  { 
+                    "type": "header", 
+                    "text": { 
+                      "type": "plain_text", 
+                      "text": "$APP_NAME" 
+                    } 
+                  },  
+                  { 
+                    "type": "section", 
+                    "text": { 
+                      "type": "mrkdwn", 
+                      "text": "Security Scan: *$TEXT*\n PR Title: *$${{ steps.find_pr.outputs.title }}*\nCriado por: *$AUTHOR*" 
+                    } 
+                  },
+                  {
+                    "type": "actions",
+                    "elements": [
+                      {
+                        "type": "button",
+                        "style": "primary",
+                        "text": {
+                          "type": "plain_text",
+                          "text": "Github PR"
+                        },
+                        "value": "link_pr",
+                        "url": "$PR_URL",
+                        "action_id": "actionId-0"
+                      },
+                      {
+                        "type": "button",
+                        "style": "primary",
+                        "text": {
+                          "type": "plain_text",
+                          "text": "Github Actions"
+                        },
+                        "value": "link_job",
+                        "url": "$JOB_URL",
+                        "action_id": "actionId-2"
+                      }
+                    ]
+                  }, 
+                ] 
+              } 
+            ] 
+          }
+        BODY
