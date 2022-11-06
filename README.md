@@ -2,6 +2,11 @@
 
 Essa Action apresenta uma maneira de rodar o [Gitleaks](https://github.com/zricethezav/gitleaks) no seu github action workflow.
 
+O principal objetivo dessa action é realizar um scan procurando por secrets, credenciais ou outras informações sensíveis dentro dos commits de um pull-request específico, ou seja, o secret scanning ocorrerá somente dentro dos commits compreendidos no pull-request que está executando essa action.
+
+> NOTE: É recomendado que você utilize essa action num workflow de pull-request, dessa forma é possível garantir um check de segurança antes do merge na branch default.
+
+O scan utiliza o arquivo de [regexes](https://github.com/zricethezav/gitleaks/blob/master/config/gitleaks.toml) default do [Gitleaks](https://github.com/zricethezav/gitleaks) no seu github action workflow. 
 
 ## Inputs
 
