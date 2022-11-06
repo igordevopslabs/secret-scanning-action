@@ -48,6 +48,11 @@ Se durante a execução da action nenhuma secret for detectad, os steps de notif
 ### Comentário no PR:
 ![imagem](https://user-images.githubusercontent.com/73206099/200149543-e599677c-7b32-444f-8156-5ada55858ea8.png)
 
+
+### Notificação do Slack:
+![imagem](https://user-images.githubusercontent.com/73206099/200149739-96e8b42a-0b43-47cf-a7e2-ea3d7661c115.png)
+
+
 ## Como remover uma secret do git history?
 
 [GitHub](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/removing-sensitive-data-from-a-repository) possui um artigo para o uso do [BFG Repo Cleaner](https://rtyley.github.io/bfg-repo-cleaner/).
