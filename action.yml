@@ -1,5 +1,5 @@
 name: "Secret Scanning"
-description: "Make a security scan searching for secrets leaked in the repo. If some secret is finding in the repo, a slack notification will be sent too."
+description: "Make a security scans searching for secrets leaked in the repo. If some secret is finding in the repo, a slack notification will be sent too."
 inputs:
 
   image:
